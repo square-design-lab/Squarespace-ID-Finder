@@ -10,6 +10,10 @@
     block: true,
     feblock: false,
     image: false,
+    sectiontheme: false, // section colour-theme labels
+    contrast: false, // WCAG contrast badges
+    colorFormat: "hex", // palette copy format: hex | rgb | hsl
+    query: "", // search filter for on-page labels
   };
 
   // ---- helpers ------------------------------------------------------------
@@ -87,7 +91,7 @@
 
   // ---- site theme (palette + fonts) --------------------------------------
 
-  function hslToHex(hslStr) {
+  function hslToRgb(hslStr) {
     const p = hslStr.split(",").map((x) => parseFloat(x));
     if (p.length < 3 || p.some(isNaN)) return null;
     const h = p[0],
@@ -103,8 +107,19 @@
     else if (h < 240) [r, g, b] = [0, x, c];
     else if (h < 300) [r, g, b] = [x, 0, c];
     else [r, g, b] = [c, 0, x];
-    const to = (v) => ("0" + Math.round((v + m) * 255).toString(16)).slice(-2);
-    return "#" + to(r) + to(g) + to(b);
+    return [
+      Math.round((r + m) * 255),
+      Math.round((g + m) * 255),
+      Math.round((b + m) * 255),
+    ];
+  }
+  function rgbToHex([r, g, b]) {
+    const t = (v) => ("0" + Math.round(v).toString(16)).slice(-2);
+    return "#" + t(r) + t(g) + t(b);
+  }
+  function fmtHsl(hslStr) {
+    const p = hslStr.split(",").map((x) => parseFloat(x));
+    return `hsl(${Math.round(p[0])}, ${Math.round(p[1])}%, ${Math.round(p[2])}%)`;
   }
 
   // Squarespace stores its 5-colour palette and the theme fonts as CSS custom
@@ -122,8 +137,15 @@
       ["Accent", "accent"],
     ].forEach(([name, key]) => {
       const hsl = g("--" + key + "-hsl");
-      const hex = hsl && hslToHex(hsl);
-      if (hex) colors.push({ name, hex });
+      const rgb = hsl && hslToRgb(hsl);
+      if (rgb) {
+        colors.push({
+          name,
+          hex: rgbToHex(rgb),
+          rgb: `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`,
+          hsl: fmtHsl(hsl),
+        });
+      }
     });
 
     const fonts = [];
@@ -178,6 +200,81 @@
     } catch (_) {}
     // Loaded (in-use) fonts first.
     return [...map.values()].sort((a, b) => b.loaded - a.loaded);
+  }
+
+  // ---- section colour theme + WCAG contrast ------------------------------
+
+  function relLuminance([r, g, b]) {
+    const a = [r, g, b].map((v) => {
+      v /= 255;
+      return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * a[0] + 0.7152 * a[1] + 0.0722 * a[2];
+  }
+
+  function contrastRatio(c1, c2) {
+    const l1 = relLuminance(c1),
+      l2 = relLuminance(c2);
+    const hi = Math.max(l1, l2),
+      lo = Math.min(l1, l2);
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  // Parse any CSS colour string (rgb/rgba/hsl/hsla/hex) to [r,g,b], or null if
+  // fully transparent / unparseable.
+  function parseColor(str) {
+    if (!str) return null;
+    str = str.trim();
+    let m = str.match(/rgba?\(([^)]+)\)/i);
+    if (m) {
+      const p = m[1].split(",").map((x) => parseFloat(x));
+      if (p.length >= 4 && p[3] === 0) return null;
+      return [p[0], p[1], p[2]];
+    }
+    m = str.match(/hsla?\(([^)]+)\)/i);
+    if (m) {
+      const p = m[1].split(",").map((x) => parseFloat(x));
+      if (p.length >= 4 && p[3] === 0) return null;
+      return hslToRgb(`${p[0]},${p[1]}%,${p[2]}%`);
+    }
+    m = str.match(/^#([0-9a-f]{6})$/i);
+    if (m)
+      return [0, 2, 4].map((i) => parseInt(m[1].substr(i, 2), 16));
+    m = str.match(/^#([0-9a-f]{3})$/i);
+    if (m)
+      return [0, 1, 2].map((i) => parseInt(m[1][i] + m[1][i], 16));
+    return null;
+  }
+
+  // Squarespace section backgrounds (images/videos) live in a `.section-background`
+  // layer — text over media can't be judged from CSS, so detect + skip it.
+  function sectionHasMediaBg(sec) {
+    const sb = sec.querySelector(".section-background");
+    if (!sb) return false;
+    if (sb.querySelector("img,video,canvas,svg")) return true;
+    const bi = getComputedStyle(sb).backgroundImage;
+    return !!(bi && bi !== "none");
+  }
+
+  // The section colour theme's own text colour vs background colour — the
+  // authoritative pair for "is this theme readable". Text = the section's
+  // computed `color`; background = the theme's `--siteBackgroundColor` variable.
+  // Skips sections whose visible background is media.
+  function sectionThemeColors(sec) {
+    if (sectionHasMediaBg(sec)) return null;
+    const cs = getComputedStyle(sec);
+    const text = parseColor(cs.color);
+    const bg = parseColor(cs.getPropertyValue("--siteBackgroundColor"));
+    if (!text || !bg) return null;
+    return { text, bg };
+  }
+
+  function makeSwatch(hex, title) {
+    const s = document.createElement("span");
+    s.className = "sqsf-mini-sw";
+    s.style.background = hex;
+    s.title = title + ": " + hex;
+    return s;
   }
 
   function makeLabel(tag, value) {
@@ -257,7 +354,7 @@
     add(targetEl, layer, tag, value, yOff = 0) {
       const node = makeLabel(tag, value);
       this.root.appendChild(node);
-      const item = { el: targetEl, node, layer, yOff, pairLeft: null };
+      const item = { el: targetEl, node, layer, yOff, value, pairLeft: null };
       this.items.push(item);
       if (targetEl) {
         node.addEventListener("mouseenter", () => this.showHighlight(targetEl));
@@ -299,6 +396,35 @@
           `[data-section-id="${id}"]`
         );
         data.pairLeft = custom;
+
+        // Section colour theme (off by default): the theme name Squarespace
+        // stores on the section, plus swatches for its background + text colour.
+        const themeName = el.getAttribute("data-section-theme");
+        const tc = sectionThemeColors(el);
+        const themeItem = this.add(
+          el,
+          "sectiontheme",
+          "THEME",
+          themeName || "—",
+          26
+        );
+        themeItem.value = ""; // not a searchable selector
+        if (tc) {
+          themeItem.node.append(makeSwatch(rgbToHex(tc.bg), "background"));
+          themeItem.node.append(makeSwatch(rgbToHex(tc.text), "text"));
+
+          // WCAG contrast badge (off by default) — the theme's body text on its
+          // background, using normal-text thresholds (AA≥4.5, AAA≥7).
+          const ratio = contrastRatio(tc.text, tc.bg);
+          const aa = ratio >= 4.5,
+            aaa = ratio >= 7;
+          const label = `${ratio.toFixed(1)}:1  AA ${aa ? "✓" : "✗"}  AAA ${
+            aaa ? "✓" : "✗"
+          }`;
+          const cItem = this.add(el, "contrast", "CONTRAST", label, 52);
+          cItem.node.classList.add(aa ? "sqsf-pass" : "sqsf-fail");
+          cItem.value = ""; // not a searchable selector
+        }
       });
 
       // Blocks + their Fluid-Engine class (`.fe-<blockId>`, on the parent).
@@ -324,7 +450,18 @@
     render(state) {
       this.state = { ...DEFAULTS, ...(state || {}) };
       const master = this.state.active !== false;
-      for (const it of this.items) it.on = master && !!this.state[it.layer];
+      const q = (this.state.query || "").trim().toLowerCase();
+      for (const it of this.items) {
+        if (!master) {
+          it.on = false;
+        } else if (q) {
+          // Search: show any label (across every type) whose value matches,
+          // ignoring the per-type toggles so nothing is missed.
+          it.on = !!it.value && it.value.toLowerCase().includes(q);
+        } else {
+          it.on = !!this.state[it.layer];
+        }
+      }
       this.reposition();
     }
 
@@ -400,10 +537,19 @@
     }
 
     status() {
+      // Deduped, searchable list of selectors (for the popup's search box).
+      const seen = new Set();
+      const labels = [];
+      for (const it of this.items) {
+        if (!it.value || seen.has(it.value)) continue;
+        seen.add(it.value);
+        labels.push({ type: it.layer, value: it.value });
+      }
       return {
         isSqsp: isSquarespacePage(),
         pageId: getPageId(),
         theme: readTheme(),
+        labels,
       };
     }
   }

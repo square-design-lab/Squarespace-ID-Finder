@@ -55,6 +55,23 @@
   word-break: break-all; /* keep long image URLs inside the chip */
 }
 
+/* section-theme swatches + contrast pass/fail */
+.sqsf-mini-sw {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  margin-left: 4px;
+}
+.sqsf-pass .sqsf-tag {
+  background: #17a34a;
+}
+.sqsf-fail .sqsf-tag {
+  background: #e5484d;
+}
+
 .sqsf-copied {
   background: #0b8f3d;
 }

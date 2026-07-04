@@ -7,6 +7,10 @@ const DEFAULTS = {
   block: true,
   feblock: false,
   image: false,
+  sectiontheme: false,
+  contrast: false,
+  colorFormat: "hex",
+  query: "",
 };
 
 // Plain-language rows. `hint` shows the exact selector/text it copies.
@@ -16,7 +20,17 @@ const LAYERS = [
   { key: "block", name: "Block IDs", hint: "#block-…" },
   { key: "feblock", name: "Block class names", hint: ".fe-block-…" },
   { key: "image", name: "Image URLs", hint: "image file links" },
+  { key: "sectiontheme", name: "Section colour themes", hint: "theme name + colours" },
+  { key: "contrast", name: "Contrast (WCAG)", hint: "AA / AAA text vs background" },
 ];
+
+const RESULT_TAGS = {
+  page: "PAGE",
+  section: "SECTION",
+  block: "BLOCK",
+  feblock: "CLASS",
+  image: "IMAGE",
+};
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -147,18 +161,20 @@ function makeFontRow(label, name, family, copyValue) {
   return li;
 }
 
-function renderTheme(theme) {
+function renderTheme(theme, format) {
   if (!theme) return;
   const wrap = $("#theme");
+  const fmt = format || "hex";
   let any = false;
 
   const sw = $("#swatches");
   sw.textContent = "";
   (theme.colors || []).forEach((c) => {
     any = true;
+    const value = c[fmt] || c.hex;
     const btn = document.createElement("button");
     btn.className = "swatch";
-    btn.title = `${c.name} — copy ${c.hex}`;
+    btn.title = `${c.name} — copy ${value}`;
 
     const chip = document.createElement("span");
     chip.className = "chip";
@@ -173,11 +189,11 @@ function renderTheme(theme) {
 
     const hex = document.createElement("span");
     hex.className = "hex";
-    hex.textContent = c.hex;
+    hex.textContent = value;
 
     btn.append(chip, hex);
     btn.addEventListener("click", () =>
-      copyAndFlash(btn, c.hex, "Copied!", ".hex")
+      copyAndFlash(btn, value, "Copied!", ".hex")
     );
     sw.append(btn);
   });
@@ -236,6 +252,79 @@ function wirePageCopy(pageId) {
   });
 }
 
+function wireColorFormat(state, theme) {
+  const seg = $("#colorFormat");
+  if (!seg) return;
+  const apply = () => {
+    const fmt = state.colorFormat || "hex";
+    seg
+      .querySelectorAll(".seg-btn")
+      .forEach((b) => b.classList.toggle("active", b.dataset.fmt === fmt));
+    renderTheme(theme, fmt);
+  };
+  seg.querySelectorAll(".seg-btn").forEach((b) => {
+    b.addEventListener("click", async () => {
+      state.colorFormat = b.dataset.fmt;
+      await setState(state);
+      apply();
+    });
+  });
+  apply();
+}
+
+function renderSearchResults(labels, query) {
+  const box = $("#searchResults");
+  box.textContent = "";
+  const q = (query || "").trim().toLowerCase();
+  if (!q) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  const matches = labels.filter((l) => l.value.toLowerCase().includes(q));
+
+  const count = document.createElement("div");
+  count.className = "result-count";
+  count.textContent =
+    matches.length + " match" + (matches.length === 1 ? "" : "es");
+  box.append(count);
+
+  if (!matches.length) {
+    const e = document.createElement("div");
+    e.className = "search-empty";
+    e.textContent = "No IDs, classes or URLs match.";
+    box.append(e);
+    return;
+  }
+  matches.slice(0, 60).forEach((l) => {
+    const btn = document.createElement("button");
+    btn.className = "result";
+    btn.title = "Copy " + l.value;
+    const t = document.createElement("span");
+    t.className = "rtype";
+    t.textContent = RESULT_TAGS[l.type] || l.type;
+    const v = document.createElement("span");
+    v.className = "rval";
+    v.textContent = l.value;
+    btn.append(t, v);
+    btn.addEventListener("click", () =>
+      copyAndFlash(btn, l.value, "Copied!", ".rval")
+    );
+    box.append(btn);
+  });
+}
+
+function wireSearch(state, labels) {
+  const input = $("#search");
+  input.value = state.query || "";
+  input.addEventListener("input", async () => {
+    state.query = input.value;
+    renderSearchResults(labels, state.query);
+    await setState(state); // also filters the on-page overlay to matches
+  });
+  if (state.query) renderSearchResults(labels, state.query);
+}
+
 async function main() {
   const state = await getState();
   reflectMaster(state);
@@ -271,7 +360,8 @@ async function main() {
   }
 
   if (status.pageId) wirePageCopy(status.pageId);
-  renderTheme(status.theme);
+  wireColorFormat(state, status.theme);
+  wireSearch(state, status.labels || []);
   setBadge(tab.id, state.active !== false);
 }
 

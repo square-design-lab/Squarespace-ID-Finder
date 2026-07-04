@@ -36,12 +36,25 @@
       </button>
     </div>
 
+    <div class="search-wrap">
+      <input id="search" class="search" type="search"
+        placeholder="Search IDs, classes, image URLs…" autocomplete="off" />
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
+
     <div class="section-head section-head-layers">Show these</div>
     <ul id="toggles" class="toggles"></ul>
 
     <div id="theme" class="theme" hidden>
       <div class="theme-divider"></div>
-      <div class="section-head">Site colours</div>
+      <div class="section-head sh-row">
+        <span>Site colours</span>
+        <span id="colorFormat" class="seg">
+          <button type="button" class="seg-btn" data-fmt="hex">Hex</button>
+          <button type="button" class="seg-btn" data-fmt="rgb">RGB</button>
+          <button type="button" class="seg-btn" data-fmt="hsl">HSL</button>
+        </span>
+      </div>
       <div id="swatches" class="swatches"></div>
       <div class="section-head">Fonts</div>
       <ul id="fonts" class="fonts"></ul>
