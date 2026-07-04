@@ -22,20 +22,16 @@ Every value is shown **in full** (never truncated) and uses one consistent color
 the small tag word (PAGE / ID / SECTION / BLOCK / CLASS / IMAGE) tells you what it
 is.
 
-**Search.** A search box in the panel filters everything at once — type any part
-of a block id, section id, `.fe-block-…` class, or image URL. Matches are listed
-in the panel (click to copy) and the on-page overlay narrows to just those
-elements, so you can locate one selector among hundreds.
-
 **Section colour themes** *(toggle, off by default)* — labels each section with
 its Squarespace colour-theme name (e.g. `white-bold`, `black`) plus swatches for
 the theme's background and text colours.
 
-**Contrast (WCAG)** *(toggle, off by default)* — a per-section badge showing the
-theme's text-vs-background contrast ratio with AA / AAA pass or fail (green /
-red). It reads the section's computed text colour and its `--siteBackgroundColor`
-theme variable, and skips sections whose background is an image/video (contrast
-over media can't be judged from CSS).
+**Contrast (WCAG)** *(toggle, off by default)* — a per-section badge with a clear
+**PASS** / **FAIL** (green / red) plus the ratio and AA / AAA breakdown, e.g.
+`PASS · 18.4:1 · AA ✓ AAA ✓`. PASS means it meets AA (the baseline). It reads the
+section's computed text colour and its `--siteBackgroundColor` theme variable,
+and skips sections whose background is an image/video (contrast over media can't
+be judged from CSS).
 
 **Site theme.** The panel also reads the site's theme straight from the page and
 shows it (independent of the on-page labels):

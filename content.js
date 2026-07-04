@@ -13,7 +13,6 @@
     sectiontheme: false, // section colour-theme labels
     contrast: false, // WCAG contrast badges
     colorFormat: "hex", // palette copy format: hex | rgb | hsl
-    query: "", // search filter for on-page labels
   };
 
   // ---- helpers ------------------------------------------------------------
@@ -408,22 +407,21 @@
           themeName || "—",
           26
         );
-        themeItem.value = ""; // not a searchable selector
         if (tc) {
           themeItem.node.append(makeSwatch(rgbToHex(tc.bg), "background"));
           themeItem.node.append(makeSwatch(rgbToHex(tc.text), "text"));
 
           // WCAG contrast badge (off by default) — the theme's body text on its
-          // background, using normal-text thresholds (AA≥4.5, AAA≥7).
+          // background, using normal-text thresholds (AA≥4.5, AAA≥7). "PASS" =
+          // meets AA (the baseline requirement).
           const ratio = contrastRatio(tc.text, tc.bg);
           const aa = ratio >= 4.5,
             aaa = ratio >= 7;
-          const label = `${ratio.toFixed(1)}:1  AA ${aa ? "✓" : "✗"}  AAA ${
-            aaa ? "✓" : "✗"
-          }`;
+          const label = `${aa ? "PASS" : "FAIL"} · ${ratio.toFixed(
+            1
+          )}:1 · AA ${aa ? "✓" : "✗"} AAA ${aaa ? "✓" : "✗"}`;
           const cItem = this.add(el, "contrast", "CONTRAST", label, 52);
           cItem.node.classList.add(aa ? "sqsf-pass" : "sqsf-fail");
-          cItem.value = ""; // not a searchable selector
         }
       });
 
@@ -450,18 +448,7 @@
     render(state) {
       this.state = { ...DEFAULTS, ...(state || {}) };
       const master = this.state.active !== false;
-      const q = (this.state.query || "").trim().toLowerCase();
-      for (const it of this.items) {
-        if (!master) {
-          it.on = false;
-        } else if (q) {
-          // Search: show any label (across every type) whose value matches,
-          // ignoring the per-type toggles so nothing is missed.
-          it.on = !!it.value && it.value.toLowerCase().includes(q);
-        } else {
-          it.on = !!this.state[it.layer];
-        }
-      }
+      for (const it of this.items) it.on = master && !!this.state[it.layer];
       this.reposition();
     }
 
@@ -537,19 +524,10 @@
     }
 
     status() {
-      // Deduped, searchable list of selectors (for the popup's search box).
-      const seen = new Set();
-      const labels = [];
-      for (const it of this.items) {
-        if (!it.value || seen.has(it.value)) continue;
-        seen.add(it.value);
-        labels.push({ type: it.layer, value: it.value });
-      }
       return {
         isSqsp: isSquarespacePage(),
         pageId: getPageId(),
         theme: readTheme(),
-        labels,
       };
     }
   }
