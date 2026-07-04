@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="head">
+      <div class="brand">
+        <span class="dot"></span>
+        <h1>Squarespace ID Finder</h1>
+      </div>
+      <p class="sub">Turn on what you want to see, then click any tag on the
+        page to copy it.</p>
+    </header>
+
+    <label class="master">
+      <div class="master-text">
+        <div class="master-title">Show IDs on page</div>
+        <div id="masterState" class="master-sub">On</div>
+      </div>
+      <span class="switch switch-lg">
+        <input id="masterToggle" type="checkbox" />
+        <span class="track"></span>
+      </span>
+    </label>
+
+    <div id="notice" class="notice" hidden></div>
+
+    <div id="pageRow" class="page-row" hidden>
+      <div class="page-row-label">This page</div>
+      <button id="pageCopy" class="page-copy" title="Copy page ID">
+        <span id="pageId" class="page-id">#collection-…</span>
+        <span class="copy-hint">Copy</span>
+      </button>
+    </div>
+
+    <div class="section-head section-head-layers">Show these</div>
+    <ul id="toggles" class="toggles"></ul>
+
+    <div id="theme" class="theme" hidden>
+      <div class="theme-divider"></div>
+      <div class="section-head">Site colours</div>
+      <div id="swatches" class="swatches"></div>
+      <div class="section-head">Fonts</div>
+      <ul id="fonts" class="fonts"></ul>
+
+      <div id="customFontsWrap" hidden>
+        <div class="subhead">
+          Custom fonts on this page
+          <span class="subhead-note">added via code / upload</span>
+        </div>
+        <ul id="customFonts" class="fonts"></ul>
+      </div>
+    </div>
+
+    <footer class="foot">
+      <span class="tip">Tip: click any tag on the page to copy it · hover to
+        highlight.</span>
+    </footer>
+
+    <script src="popup.js"></script>
+  </body>
+</html>

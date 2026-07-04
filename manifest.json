@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Squarespace ID Finder+",
+  "version": "1.1.0",
+  "description": "Click the icon, pick what to reveal, then click any tag on the page to copy its Squarespace page, section or block ID, block class, or image URL.",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Squarespace ID Finder",
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

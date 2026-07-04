@@ -1,0 +1,77 @@
+/* Squarespace ID Finder+ — on-page label overlay.
+   One color for every type (cleaner than a rainbow); the little TAG word tells
+   you what it is. Full values, never truncated. Namespaced + max z-index so the
+   host site's CSS can't touch it. */
+
+#__sqsfRoot__ {
+  --sqsf-ink: #16161d;
+  --sqsf-accent: #2b6ef2;
+  position: fixed;
+  inset: 0;
+  z-index: 2147483646;
+  pointer-events: none; /* clicks fall through the empty gaps */
+}
+
+.sqsf-label {
+  position: fixed;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 6px;
+  max-width: min(560px, 92vw);
+  background: var(--sqsf-ink);
+  color: #fff;
+  cursor: pointer;
+  text-align: left;
+  box-shadow: 0 1px 5px rgba(0, 0, 0, 0.4);
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.sqsf-label:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+  z-index: 2147483647;
+}
+
+.sqsf-tag {
+  flex: 0 0 auto;
+  font: 800 9px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Helvetica, Arial, sans-serif;
+  letter-spacing: 0.08em;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: var(--sqsf-accent);
+  color: #fff;
+  text-transform: uppercase;
+}
+
+.sqsf-val {
+  font: 500 12px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas,
+    "Liberation Mono", monospace;
+  white-space: normal;
+  word-break: break-all; /* keep long image URLs inside the chip */
+}
+
+.sqsf-copied {
+  background: #0b8f3d;
+}
+.sqsf-copied .sqsf-tag {
+  background: rgba(255, 255, 255, 0.25);
+}
+.sqsf-failed {
+  background: #b4232a;
+}
+
+/* subtle outline of the element a label points to, on hover */
+.sqsf-highlight {
+  position: fixed;
+  pointer-events: none;
+  border: 2px solid var(--sqsf-accent);
+  border-radius: 2px;
+  background: rgba(43, 110, 242, 0.08);
+  box-sizing: border-box;
+  z-index: 2147483645;
+}
