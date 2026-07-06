@@ -295,21 +295,20 @@
     el.addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // Lock the box to its current size before swapping in "Copied!" so the
-      // shorter text can't change offsetWidth — otherwise a wide (clamped) label
-      // would shift sideways and re-expand when the URL comes back.
-      const rect = el.getBoundingClientRect();
-      el.style.width = rect.width + "px";
-      el.style.height = rect.height + "px";
       const ok = await copyText(value);
-      const original = v.textContent;
+      // Pin the label where it is for the duration of the flash so its position
+      // can't be re-clamped when the text width changes (reposition() skips
+      // frozen nodes). The "Copied!" text keeps its own natural width — no shift,
+      // no empty space, no re-expansion when the value returns.
+      if (el._sqsfTimer) clearTimeout(el._sqsfTimer);
+      el.dataset.sqsfFrozen = "1";
       el.classList.add(ok ? "sqsf-copied" : "sqsf-failed");
       v.textContent = ok ? "Copied!" : "Copy failed";
-      setTimeout(() => {
+      el._sqsfTimer = setTimeout(() => {
         el.classList.remove("sqsf-copied", "sqsf-failed");
-        v.textContent = original;
-        el.style.width = "";
-        el.style.height = "";
+        v.textContent = value; // always restore the true value, never a stale label
+        delete el.dataset.sqsfFrozen;
+        el._sqsfTimer = null;
       }, 1000);
     });
 
@@ -486,6 +485,13 @@
       for (const it of this.items) {
         if (!it.on) {
           it.node.style.display = "none";
+          continue;
+        }
+
+        // While a copy flash is showing, leave the label exactly where it is so
+        // the text swap can't move it. It stays visible; position resumes after.
+        if (it.node.dataset.sqsfFrozen) {
+          it.node.style.display = "";
           continue;
         }
 
