@@ -295,6 +295,12 @@
     el.addEventListener("click", async (e) => {
       e.preventDefault();
       e.stopPropagation();
+      // Lock the box to its current size before swapping in "Copied!" so the
+      // shorter text can't change offsetWidth — otherwise a wide (clamped) label
+      // would shift sideways and re-expand when the URL comes back.
+      const rect = el.getBoundingClientRect();
+      el.style.width = rect.width + "px";
+      el.style.height = rect.height + "px";
       const ok = await copyText(value);
       const original = v.textContent;
       el.classList.add(ok ? "sqsf-copied" : "sqsf-failed");
@@ -302,6 +308,8 @@
       setTimeout(() => {
         el.classList.remove("sqsf-copied", "sqsf-failed");
         v.textContent = original;
+        el.style.width = "";
+        el.style.height = "";
       }, 1000);
     });
 
